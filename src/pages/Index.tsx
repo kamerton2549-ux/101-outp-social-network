@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Icon from "@/components/ui/icon";
 
 const IMG_DRESDEN = "https://cdn.poehali.dev/projects/5a725459-9c28-4f3c-813d-94bb7e060502/files/aa483e23-240e-47fe-a9e4-bba8b4e20b28.jpg";
@@ -61,6 +62,7 @@ const EVENTS = [
 ];
 
 export default function Index() {
+  const navigate = useNavigate();
   const [activeNav, setActiveNav]     = useState("home");
   const [scrolled, setScrolled]       = useState(false);
   const [mobileOpen, setMobileOpen]   = useState(false);
@@ -385,7 +387,7 @@ export default function Index() {
               <h2 className="font-display text-4xl sm:text-5xl font-black mt-2">Участники</h2>
               <div className="divider-gold max-w-xs mt-3" />
             </div>
-            <button className="flex items-center gap-2 px-5 py-2.5 bg-khaki text-parchment font-body font-bold text-sm rounded-sm hover:bg-khaki-light transition-colors">
+            <button onClick={() => navigate("/profile")} className="flex items-center gap-2 px-5 py-2.5 bg-khaki text-parchment font-body font-bold text-sm rounded-sm hover:bg-khaki-light transition-colors">
               <Icon name="UserPlus" size={14} />
               Добавить профиль
             </button>
@@ -697,6 +699,28 @@ export default function Index() {
           </div>
         </div>
       </section>
+
+      {/* ═══ БЫСТРЫЙ ДОСТУП (float panel) ═══ */}
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-2 items-end">
+        <div className="bg-card border border-border shadow-lg p-3 flex flex-col gap-2">
+          <div className="font-body text-[10px] text-muted-foreground uppercase tracking-wide text-center mb-1">Разделы</div>
+          {[
+            { icon: "Rss",      label: "Лента",     path: "/feed" },
+            { icon: "Map",      label: "Карта ГСВГ", path: "/map" },
+            { icon: "User",     label: "Профиль",   path: "/profile" },
+            { icon: "FileText", label: "Техзадание", path: "/spec" },
+          ].map(item => (
+            <button
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              className="flex items-center gap-2 px-3 py-2 border border-border text-xs font-body text-muted-foreground hover:bg-sand hover:text-khaki hover:border-khaki/30 transition-colors text-left whitespace-nowrap"
+            >
+              <Icon name={item.icon as "Rss" | "Map" | "User" | "FileText"} size={13} className="text-khaki/60" />
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* ═══ FOOTER ═══ */}
       <footer className="bg-khaki py-12 px-6">
