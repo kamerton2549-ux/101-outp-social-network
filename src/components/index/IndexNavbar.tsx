@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import Icon from "@/components/ui/icon";
 
 const NAV = [
@@ -50,6 +51,10 @@ export default function IndexNavbar({ scrolled, activeNav, mobileOpen, setMobile
           </div>
 
           <div className="flex items-center gap-2">
+            <Link to="/gallery" className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-parchment/65 hover:text-parchment text-xs font-body transition-colors rounded-sm">
+              <Icon name="Images" size={12} />
+              Галерея
+            </Link>
             <button className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 bg-gold text-coal text-xs font-body font-bold hover:bg-gold-light transition-colors rounded-sm">
               <Icon name="UserPlus" size={12} />
               Вступить

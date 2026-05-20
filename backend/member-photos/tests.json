@@ -1,0 +1,10 @@
+{
+  "tests": [
+    {
+      "name": "Фото без member_id — ошибка",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 400
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import Icon from "@/components/ui/icon";
 import { EMPTY_FORM, FormData } from "./ProfileRegisterForm";
+import MemberPhotoUpload from "./MemberPhotoUpload";
 
 interface Props {
   successId: number | null;
@@ -46,6 +47,12 @@ export default function ProfileSuccess({ successId, onAddAnother }: Props) {
           Добавить ещё профиль
         </button>
       </div>
+
+      {successId && (
+        <div className="mt-10 border-t border-border pt-8">
+          <MemberPhotoUpload memberId={successId} />
+        </div>
+      )}
     </div>
   );
 }
