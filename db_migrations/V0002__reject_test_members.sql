@@ -1,0 +1,1 @@
+UPDATE t_p17442137_101_outp_social_netw.members SET status = 'rejected' WHERE full_name = 'Тестовый Участник Иванович';
