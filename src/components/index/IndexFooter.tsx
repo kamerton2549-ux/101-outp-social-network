@@ -29,6 +29,7 @@ export default function IndexFooter({ goTo }: Props) {
             { icon: "Rss",      label: "Лента",      path: "/feed" },
             { icon: "Map",      label: "Карта ГСВГ",  path: "/map" },
             { icon: "User",     label: "Профиль",    path: "/profile" },
+            { icon: "Shield",   label: "Модератор",  path: "/admin" },
             { icon: "FileText", label: "Техзадание", path: "/spec" },
           ].map(item => (
             <button
@@ -36,7 +37,7 @@ export default function IndexFooter({ goTo }: Props) {
               onClick={() => navigate(item.path)}
               className="flex items-center gap-2 px-3 py-2 border border-border text-xs font-body text-muted-foreground hover:bg-sand hover:text-khaki hover:border-khaki/30 transition-colors text-left whitespace-nowrap"
             >
-              <Icon name={item.icon as "Rss" | "Map" | "User" | "FileText"} size={13} className="text-khaki/60" />
+              <Icon name={item.icon as "Rss" | "Map" | "User" | "Shield" | "FileText"} size={13} className="text-khaki/60" />
               {item.label}
             </button>
           ))}
