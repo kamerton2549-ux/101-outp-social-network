@@ -1,21 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ProfileTopbar from "@/components/profile/ProfileTopbar";
 import ProfileRegisterForm, { FormData, EMPTY_FORM } from "@/components/profile/ProfileRegisterForm";
 import ProfileSuccess from "@/components/profile/ProfileSuccess";
 import ProfileDemo from "@/components/profile/ProfileDemo";
 
 const API = "https://functions.poehali.dev/ca3df51e-8d09-4790-a55a-30b62a3b8673";
+const SAVE_KEY = "101outp_profile_draft";
 
 type View = "demo" | "register" | "success";
 
+function loadDraft(): FormData {
+  try {
+    const s = localStorage.getItem(SAVE_KEY);
+    return s ? { ...EMPTY_FORM, ...JSON.parse(s) } : EMPTY_FORM;
+  } catch {
+    return EMPTY_FORM;
+  }
+}
+
 export default function Profile() {
-  const [view, setView]           = useState<View>("demo");
+  const [view, setView]           = useState<View>(() => {
+    const draft = localStorage.getItem(SAVE_KEY);
+    return draft ? "register" : "demo";
+  });
   const [fontSize, setFontSize]   = useState(16);
   const [highContrast, setHC]     = useState(false);
-  const [form, setForm]           = useState<FormData>(EMPTY_FORM);
+  const [form, setForm]           = useState<FormData>(loadDraft);
   const [errors, setErrors]       = useState<Partial<Record<keyof FormData, string>>>({});
   const [loading, setLoading]     = useState(false);
   const [successId, setSuccessId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (view === "register") {
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify(form)); } catch (e) { void e; }
+    }
+  }, [form, view]);
 
   const setF = (k: keyof FormData, v: string | boolean | string[]) =>
     setForm(f => ({ ...f, [k]: v }));
@@ -57,6 +76,7 @@ export default function Profile() {
       const data = await res.json();
       if (res.ok && data.success) {
         setSuccessId(data.id);
+        try { localStorage.removeItem(SAVE_KEY); } catch (e) { void e; }
         setView("success");
       } else {
         setErrors({ full_name: data.error || "Ошибка при отправке" });
@@ -94,7 +114,7 @@ export default function Profile() {
         form={form}
         errors={errors}
         loading={loading}
-        onBack={() => setView("demo")}
+        onBack={() => { try { localStorage.removeItem(SAVE_KEY); } catch (e) { void e; } setForm(EMPTY_FORM); setView("demo"); }}
         setF={setF}
         onSubmit={submit}
       />
