@@ -1,16 +1,24 @@
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
+
+const API = "https://functions.poehali.dev/ca3df51e-8d09-4790-a55a-30b62a3b8673";
 
 const IMG_KRAKOW  = "https://cdn.poehali.dev/projects/5a725459-9c28-4f3c-813d-94bb7e060502/files/2d8618e5-9c64-4e0c-86c2-f38a1c1076e0.jpg";
 const IMG_DRESDEN = "https://cdn.poehali.dev/projects/5a725459-9c28-4f3c-813d-94bb7e060502/files/aa483e23-240e-47fe-a9e4-bba8b4e20b28.jpg";
 const IMG_REUNION = "https://cdn.poehali.dev/projects/5a725459-9c28-4f3c-813d-94bb7e060502/files/b3cbf8e6-fc7a-4c99-b319-e489c9713b57.jpg";
 
-const MEMBERS = [
-  { name: "Сергей Александрович Петров", years: "1973–1975", bn: "2-й учебный", tank: "Т-55",  role: "Механик-водитель" },
-  { name: "Владимир Иванович Козлов",    years: "1978–1980", bn: "4-й Кракау",  tank: "Т-62",  role: "Инструктор вождения" },
-  { name: "Михаил Степанович Орлов",     years: "1965–1967", bn: "1-й учебный", tank: "Т-54",  role: "Командир экипажа" },
-  { name: "Анатолий Фёдорович Зайцев",   years: "1982–1984", bn: "3-й учебный", tank: "Т-10М", role: "Механик-водитель" },
-];
+interface Member {
+  id: number;
+  full_name: string;
+  rank: string | null;
+  years_from: number | null;
+  years_to: number | null;
+  battalion: string | null;
+  role: string | null;
+  tanks: string[];
+  photo_url: string | null;
+}
 
 const FORUM_TOPICS = [
   { title: "Батальон Кракау — вспоминаем полигон и своих командиров",   replies: 28, author: "В.И. Козлов",  date: "14 мая 2026",   tag: "Кракау" },
@@ -28,6 +36,20 @@ const EVENTS = [
 
 export default function IndexCommunity() {
   const navigate = useNavigate();
+  const [members, setMembers]   = useState<Member[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [total, setTotal]       = useState(0);
+
+  useEffect(() => {
+    fetch(`${API}?`)
+      .then(r => r.json())
+      .then(d => {
+        setMembers((d.members || []).slice(0, 8));
+        setTotal(d.total || 0);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <>
@@ -48,27 +70,69 @@ export default function IndexCommunity() {
             </button>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {MEMBERS.map((m, i) => (
-              <div key={i} className="bg-card border border-border p-5 card-lift cursor-pointer group">
-                <div className="w-14 h-14 bg-sand border border-border flex items-center justify-center mb-4 group-hover:border-khaki/25 transition-colors">
-                  <Icon name="User" size={24} className="text-khaki/35" />
+          {loading && (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-card border border-border p-5 animate-pulse">
+                  <div className="w-14 h-14 bg-sand mb-4" />
+                  <div className="h-4 bg-sand rounded mb-2 w-3/4" />
+                  <div className="h-3 bg-sand rounded mb-3 w-1/2" />
+                  <div className="h-px bg-border mb-3" />
+                  <div className="flex gap-1.5">
+                    <div className="h-5 bg-sand rounded w-20" />
+                    <div className="h-5 bg-sand rounded w-12" />
+                  </div>
                 </div>
-                <h3 className="font-display font-bold text-foreground text-base leading-tight mb-1">{m.name}</h3>
-                <div className="font-body text-muted-foreground text-xs mb-3">{m.years} · {m.role}</div>
-                <div className="divider-gold mb-3" />
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="badge-bn">{m.bn}</span>
-                  <span className="badge-gold-sm">{m.tank}</span>
+              ))}
+            </div>
+          )}
+
+          {!loading && members.length === 0 && (
+            <div className="text-center py-16 bg-card border border-border">
+              <Icon name="Users" size={36} className="mx-auto mb-3 text-khaki/25" />
+              <p className="font-body text-muted-foreground mb-4">Пока нет одобренных участников</p>
+              <button onClick={() => navigate("/profile")}
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-khaki text-parchment font-body font-bold text-sm rounded-sm hover:bg-khaki-light transition-colors">
+                <Icon name="UserPlus" size={14} />
+                Стать первым
+              </button>
+            </div>
+          )}
+
+          {!loading && members.length > 0 && (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {members.map(m => (
+                <div key={m.id} className="bg-card border border-border p-5 card-lift cursor-pointer group">
+                  <div className="w-14 h-14 bg-sand border border-border flex items-center justify-center mb-4 group-hover:border-khaki/25 transition-colors overflow-hidden shrink-0">
+                    {m.photo_url
+                      ? <img src={m.photo_url} alt={m.full_name} className="w-full h-full object-cover" />
+                      : <Icon name="User" size={24} className="text-khaki/35" />
+                    }
+                  </div>
+                  <h3 className="font-display font-bold text-foreground text-base leading-tight mb-1">{m.full_name}</h3>
+                  <div className="font-body text-muted-foreground text-xs mb-3">
+                    {m.years_from && m.years_to ? `${m.years_from}–${m.years_to}` : ""}
+                    {m.role ? (m.years_from ? ` · ${m.role}` : m.role) : ""}
+                  </div>
+                  <div className="divider-gold mb-3" />
+                  <div className="flex flex-wrap gap-1.5">
+                    {m.battalion && <span className="badge-bn">{m.battalion}</span>}
+                    {m.tanks?.length > 0 && <span className="badge-gold-sm">{m.tanks[0]}</span>}
+                    {m.rank && !m.battalion && <span className="badge-bn">{m.rank}</span>}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           <div className="mt-8 text-center">
-            <p className="font-body text-muted-foreground text-sm mb-4">Зарегистрировано более 340 участников</p>
-            <button className="flex items-center gap-2 px-8 py-2.5 border-2 border-khaki/45 text-khaki font-body font-bold text-sm rounded-sm hover:bg-khaki hover:text-parchment transition-colors mx-auto">
-              Все участники
+            <p className="font-body text-muted-foreground text-sm mb-4">
+              {total > 0 ? `Зарегистрировано участников: ${total}` : "Станьте первым участником сообщества"}
+            </p>
+            <button onClick={() => navigate("/profile")}
+              className="flex items-center gap-2 px-8 py-2.5 border-2 border-khaki/45 text-khaki font-body font-bold text-sm rounded-sm hover:bg-khaki hover:text-parchment transition-colors mx-auto">
+              <Icon name="UserPlus" size={14} />
+              Зарегистрировать профиль
             </button>
           </div>
         </div>

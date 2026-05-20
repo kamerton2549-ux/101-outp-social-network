@@ -1,4 +1,7 @@
+import { useState, useEffect, useCallback } from "react";
 import Icon from "@/components/ui/icon";
+
+const API = "https://functions.poehali.dev/ca3df51e-8d09-4790-a55a-30b62a3b8673";
 
 const IMG_DRESDEN = "https://cdn.poehali.dev/projects/5a725459-9c28-4f3c-813d-94bb7e060502/files/aa483e23-240e-47fe-a9e4-bba8b4e20b28.jpg";
 const IMG_KRAKOW  = "https://cdn.poehali.dev/projects/5a725459-9c28-4f3c-813d-94bb7e060502/files/2d8618e5-9c64-4e0c-86c2-f38a1c1076e0.jpg";
@@ -26,22 +29,46 @@ const TIMELINE = [
   { year: "1988–1991",         text: "Вывод советских войск из ГДР. Расформирование полка в связи с объединением Германии" },
 ];
 
-const MEMBERS = [
-  { name: "Сергей Александрович Петров", years: "1973–1975", bn: "2-й учебный", tank: "Т-55",  role: "Механик-водитель" },
-  { name: "Владимир Иванович Козлов",    years: "1978–1980", bn: "4-й Кракау",  tank: "Т-62",  role: "Инструктор вождения" },
-  { name: "Михаил Степанович Орлов",     years: "1965–1967", bn: "1-й учебный", tank: "Т-54",  role: "Командир экипажа" },
-  { name: "Анатолий Фёдорович Зайцев",   years: "1982–1984", bn: "3-й учебный", tank: "Т-10М", role: "Механик-водитель" },
-];
-
-interface Props {
-  searchVal: string;
-  setSearchVal: (v: string) => void;
-  filterBn: string;
-  setFilterBn: (v: string) => void;
-  filteredMembers: typeof MEMBERS;
+interface Member {
+  id: number;
+  full_name: string;
+  rank: string | null;
+  years_from: number | null;
+  years_to: number | null;
+  battalion: string | null;
+  role: string | null;
+  tanks: string[];
+  photo_url: string | null;
 }
 
-export default function IndexHeroAboutSearch({ searchVal, setSearchVal, filterBn, setFilterBn, filteredMembers }: Props) {
+export default function IndexHeroAboutSearch() {
+  const [searchVal, setSearchVal] = useState("");
+  const [filterBn, setFilterBn]   = useState("all");
+  const [members, setMembers]     = useState<Member[]>([]);
+  const [total, setTotal]         = useState(0);
+  const [searching, setSearching] = useState(false);
+
+  const fetchMembers = useCallback(async (search: string, bn: string) => {
+    setSearching(true);
+    try {
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (bn !== "all") params.set("battalion", bn);
+      const res  = await fetch(`${API}?${params}`);
+      const data = await res.json();
+      setMembers(data.members || []);
+      setTotal(data.total || 0);
+    } catch {
+      setMembers([]);
+    } finally {
+      setSearching(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => fetchMembers(searchVal, filterBn), 400);
+    return () => clearTimeout(t);
+  }, [searchVal, filterBn, fetchMembers]);
   return (
     <>
       {/* ═══ HERO ═══ */}
@@ -217,37 +244,42 @@ export default function IndexHeroAboutSearch({ searchVal, setSearchVal, filterBn
             </div>
           </div>
 
-          <div className="space-y-2">
-            {filteredMembers.length === 0 && (
+          <div className="space-y-2 min-h-[80px]">
+            {searching && (
+              <div className="text-center py-10 font-body text-muted-foreground bg-card border border-border">
+                <Icon name="Loader2" size={24} className="mx-auto mb-2 text-khaki/40 animate-spin" />
+                Поиск...
+              </div>
+            )}
+            {!searching && members.length === 0 && (
               <div className="text-center py-14 text-muted-foreground font-body bg-card border border-border rounded-sm">
                 <Icon name="UserX" size={32} className="mx-auto mb-3 opacity-25" />
                 <p className="text-base">По запросу ничего не найдено</p>
-                <p className="text-sm mt-1 text-muted-foreground/70">Попробуйте изменить фильтры или напишите нам</p>
+                <p className="text-sm mt-1 text-muted-foreground/70">Попробуйте изменить фильтры или зарегистрируйте профиль</p>
               </div>
             )}
-            {filteredMembers.map((m, i) => (
-              <div key={i} className="member-card bg-card border border-border p-4 cursor-pointer">
+            {!searching && members.map(m => (
+              <div key={m.id} className="member-card bg-card border border-border p-4 cursor-pointer">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-sand border border-border flex items-center justify-center shrink-0">
-                    <Icon name="User" size={20} className="text-khaki/45" />
+                  <div className="w-12 h-12 bg-sand border border-border flex items-center justify-center shrink-0 overflow-hidden">
+                    {m.photo_url
+                      ? <img src={m.photo_url} alt={m.full_name} className="w-full h-full object-cover" />
+                      : <Icon name="User" size={20} className="text-khaki/45" />
+                    }
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-display font-bold text-foreground text-base mb-1.5">{m.name}</div>
+                    <div className="font-display font-bold text-foreground text-base mb-1.5">{m.full_name}</div>
                     <div className="flex flex-wrap gap-1.5 items-center">
-                      <span className="badge-bn">{m.bn}</span>
-                      <span className="badge-gold-sm">{m.tank}</span>
-                      <span className="font-body text-muted-foreground text-xs">{m.years} · {m.role}</span>
+                      {m.battalion && <span className="badge-bn">{m.battalion}</span>}
+                      {m.tanks?.length > 0 && <span className="badge-gold-sm">{m.tanks[0]}</span>}
+                      {m.rank && <span className="font-body text-muted-foreground text-xs">{m.rank}</span>}
+                      {(m.years_from || m.role) && (
+                        <span className="font-body text-muted-foreground text-xs">
+                          {m.years_from && m.years_to ? `${m.years_from}–${m.years_to}` : ""}
+                          {m.role ? (m.years_from ? ` · ${m.role}` : m.role) : ""}
+                        </span>
+                      )}
                     </div>
-                  </div>
-                  <div className="hidden sm:flex items-center gap-2 shrink-0">
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 border border-khaki/30 text-khaki text-xs font-body font-bold hover:bg-khaki hover:text-parchment transition-colors rounded-sm">
-                      <Icon name="MessageSquare" size={12} />
-                      Написать
-                    </button>
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 border border-khaki/30 text-khaki text-xs font-body font-bold hover:bg-khaki hover:text-parchment transition-colors rounded-sm">
-                      <Icon name="User" size={12} />
-                      Профиль
-                    </button>
                   </div>
                 </div>
               </div>
@@ -256,11 +288,8 @@ export default function IndexHeroAboutSearch({ searchVal, setSearchVal, filterBn
 
           <div className="mt-8 flex items-center justify-between flex-wrap gap-4">
             <p className="font-body text-sm text-muted-foreground">
-              Показано {filteredMembers.length} из {MEMBERS.length} участников
+              {searching ? "Поиск..." : `Найдено участников: ${total}`}
             </p>
-            <button className="flex items-center gap-2 px-6 py-2.5 border-2 border-khaki/45 text-khaki font-body font-bold text-sm rounded-sm hover:bg-khaki hover:text-parchment transition-colors">
-              Все участники
-            </button>
           </div>
         </div>
       </section>
@@ -268,4 +297,3 @@ export default function IndexHeroAboutSearch({ searchVal, setSearchVal, filterBn
   );
 }
 
-export { MEMBERS };
