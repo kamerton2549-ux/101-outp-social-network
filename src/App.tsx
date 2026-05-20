@@ -9,6 +9,7 @@ import Profile from "./pages/Profile";
 import Feed from "./pages/Feed";
 import MapGSVG from "./pages/MapGSVG";
 import Spec from "./pages/Spec";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/feed" element={<Feed />} />
           <Route path="/map" element={<MapGSVG />} />
           <Route path="/spec" element={<Spec />} />
+          <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

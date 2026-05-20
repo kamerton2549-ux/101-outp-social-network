@@ -32,6 +32,19 @@
       "path": "/",
       "body": {"rank": "Рядовой"},
       "expectedStatus": 400
+    },
+    {
+      "name": "GET admin without password returns 403",
+      "method": "GET",
+      "path": "/?admin=1",
+      "expectedStatus": 403
+    },
+    {
+      "name": "PATCH without password returns 403",
+      "method": "PATCH",
+      "path": "/",
+      "body": {"id": 1, "action": "approve"},
+      "expectedStatus": 403
     }
   ]
 }
