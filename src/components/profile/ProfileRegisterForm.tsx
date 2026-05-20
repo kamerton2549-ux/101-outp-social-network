@@ -98,7 +98,7 @@ export default function ProfileRegisterForm({ form, errors, loading, onBack, set
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 pt-20 pb-16">
+    <form onSubmit={e => e.preventDefault()} className="max-w-5xl mx-auto px-4 pt-20 pb-16">
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={onBack}
@@ -328,7 +328,7 @@ export default function ProfileRegisterForm({ form, errors, loading, onBack, set
             {errors.agree && <p className="font-body text-brick text-xs mb-4">{errors.agree}</p>}
 
             <button
-              onClick={onSubmit} disabled={loading || photoLoading}
+              type="button" onClick={onSubmit} disabled={loading || photoLoading}
               className="flex items-center justify-center gap-2 w-full py-3.5 bg-khaki text-parchment font-body font-bold text-base hover:bg-khaki-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed rounded-sm"
             >
               {loading
@@ -382,6 +382,6 @@ export default function ProfileRegisterForm({ form, errors, loading, onBack, set
           </div>
         </div>
       </div>
-    </div>
+    </form>
   );
 }
