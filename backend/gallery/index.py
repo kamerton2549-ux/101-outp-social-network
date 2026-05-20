@@ -13,7 +13,7 @@ import boto3
 import psycopg2
 
 SCHEMA = "t_p17442137_101_outp_social_netw"
-ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
+ADMIN_TOKEN = os.environ.get("ADMIN_PASSWORD", "")
 
 CORS = {
     "Access-Control-Allow-Origin": "*",
