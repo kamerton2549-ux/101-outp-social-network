@@ -8,6 +8,7 @@ Simple Query Protocol: SQL строится inline (без parameterized binding
 """
 import json
 import os
+import urllib.request
 import psycopg
 from psycopg.rows import dict_row
 
@@ -247,6 +248,8 @@ def create_member(event: dict) -> dict:
             row = cur.fetchone()
         conn.commit()
 
+    send_notification(full_name, body, row["id"])
+
     return ok(
         {
             "success": True,
@@ -255,3 +258,56 @@ def create_member(event: dict) -> dict:
         },
         201,
     )
+
+
+def send_notification(full_name: str, body: dict, member_id: int):
+    api_key = os.environ.get("RESEND_API_KEY", "")
+    to_email = os.environ.get("MODERATOR_EMAIL", "")
+    if not api_key or not to_email:
+        return
+
+    battalion = body.get("battalion") or "—"
+    years = ""
+    if body.get("years_from") and body.get("years_to"):
+        years = f"{body['years_from']}–{body['years_to']}"
+    elif body.get("years_from"):
+        years = str(body["years_from"])
+
+    html = f"""
+<h2 style="color:#5a4e2f">Новая заявка на регистрацию — 101 ОУТП</h2>
+<table style="border-collapse:collapse;font-family:sans-serif;font-size:14px">
+  <tr><td style="padding:6px 16px 6px 0;color:#888">ФИО</td><td style="padding:6px 0"><b>{full_name}</b></td></tr>
+  <tr><td style="padding:6px 16px 6px 0;color:#888">Батальон</td><td style="padding:6px 0">{battalion}</td></tr>
+  <tr><td style="padding:6px 16px 6px 0;color:#888">Годы службы</td><td style="padding:6px 0">{years or '—'}</td></tr>
+  <tr><td style="padding:6px 16px 6px 0;color:#888">Звание</td><td style="padding:6px 0">{body.get('rank') or '—'}</td></tr>
+  <tr><td style="padding:6px 16px 6px 0;color:#888">Email заявителя</td><td style="padding:6px 0">{body.get('email') or '—'}</td></tr>
+  <tr><td style="padding:6px 16px 6px 0;color:#888">Телефон</td><td style="padding:6px 0">{body.get('phone') or '—'}</td></tr>
+</table>
+<p style="margin-top:20px">
+  <a href="https://poehali.dev/admin" style="background:#8a7a4a;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px">
+    Перейти в панель модератора
+  </a>
+</p>
+<p style="color:#aaa;font-size:12px">Заявка №{member_id} · 101 ОУТП сообщество</p>
+"""
+
+    payload = json.dumps({
+        "from": "101 ОУТП <onboarding@resend.dev>",
+        "to": [to_email],
+        "subject": f"Новая заявка: {full_name}",
+        "html": html,
+    }).encode()
+
+    req = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=payload,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        urllib.request.urlopen(req, timeout=8)
+    except Exception:
+        pass
