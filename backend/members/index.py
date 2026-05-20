@@ -131,7 +131,7 @@ def create_member(event: dict) -> dict:
         "INSERT INTO " + SCHEMA + ".members"
         " (full_name, birth_year, hometown, email, phone,"
         "  rank, years_from, years_to, battalion, company, role,"
-        "  tanks, location, awards, bio, status)"
+        "  tanks, location, awards, bio, photo_url, status)"
         " VALUES ("
         + esc(full_name) + ","
         + esc_int(body.get("birth_year")) + ","
@@ -148,6 +148,7 @@ def create_member(event: dict) -> dict:
         + esc(body.get("location") or "Дрезден") + ","
         + esc(body.get("awards")) + ","
         + esc(body.get("bio")) + ","
+        + esc(body.get("photo_url")) + ","
         "'pending') RETURNING id"
     )
 

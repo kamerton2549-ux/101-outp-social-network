@@ -51,6 +51,7 @@ export default function Profile() {
           tanks:      form.tanks,
           awards:     form.awards     || null,
           bio:        form.bio        || null,
+          photo_url:  form.photo_url  || null,
         }),
       });
       const data = await res.json();

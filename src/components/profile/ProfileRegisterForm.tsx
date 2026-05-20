@@ -1,4 +1,7 @@
+import { useRef, useState } from "react";
 import Icon from "@/components/ui/icon";
+
+const UPLOAD_URL = "https://functions.poehali.dev/6377dabd-84d3-4700-8e6d-af8bcf959341";
 
 const TANKS_LIST = ["Т-54", "Т-55", "Т-62", "Т-64", "Т-10М", "ПТ-76"];
 const RANKS = [
@@ -15,12 +18,14 @@ export interface FormData {
   years_from: string; years_to: string; battalion: string;
   company: string; role: string; tanks: string[];
   awards: string; bio: string; agree: boolean;
+  photo_url: string;
 }
 
 export const EMPTY_FORM: FormData = {
   full_name: "", birth_year: "", hometown: "", email: "", phone: "",
   rank: "", years_from: "", years_to: "", battalion: "", company: "",
   role: "", tanks: [], awards: "", bio: "", agree: false,
+  photo_url: "",
 };
 
 interface Props {
@@ -33,8 +38,64 @@ interface Props {
 }
 
 export default function ProfileRegisterForm({ form, errors, loading, onBack, setF, onSubmit }: Props) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [photoPreview, setPhotoPreview] = useState<string>("");
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const [photoError, setPhotoError]     = useState("");
+
   const toggleTank = (t: string) =>
     setF("tanks", form.tanks.includes(t) ? form.tanks.filter(x => x !== t) : [...form.tanks, t]);
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setPhotoError("Файл слишком большой. Максимум 5 МБ");
+      return;
+    }
+    if (!["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type)) {
+      setPhotoError("Допустимые форматы: JPG, PNG, WEBP");
+      return;
+    }
+
+    setPhotoError("");
+    setPhotoLoading(true);
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setPhotoPreview(dataUrl);
+
+      try {
+        const res = await fetch(UPLOAD_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: dataUrl }),
+        });
+        const data = await res.json();
+        if (res.ok && data.url) {
+          setF("photo_url", data.url);
+        } else {
+          setPhotoError(data.error || "Ошибка загрузки фото");
+          setPhotoPreview("");
+        }
+      } catch {
+        setPhotoError("Нет связи с сервером");
+        setPhotoPreview("");
+      } finally {
+        setPhotoLoading(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removePhoto = () => {
+    setPhotoPreview("");
+    setPhotoError("");
+    setF("photo_url", "");
+    if (fileRef.current) fileRef.current.value = "";
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 pt-20 pb-16">
@@ -62,6 +123,70 @@ export default function ProfileRegisterForm({ form, errors, loading, onBack, set
               <Icon name="User" size={18} className="text-khaki/60" />
               Личные данные
             </h2>
+
+            {/* Фото */}
+            <div className="mb-5">
+              <label className="font-body text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-3">
+                Фото участника
+              </label>
+              <div className="flex items-start gap-4">
+                {/* Превью */}
+                <div className="w-24 h-24 shrink-0 border-2 border-dashed border-border bg-sand/40 flex items-center justify-center overflow-hidden relative">
+                  {photoLoading ? (
+                    <Icon name="Loader2" size={24} className="text-khaki/50 animate-spin" />
+                  ) : photoPreview ? (
+                    <>
+                      <img src={photoPreview} alt="Фото" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={removePhoto}
+                        className="absolute top-0.5 right-0.5 w-5 h-5 bg-brick text-parchment flex items-center justify-center hover:bg-brick/80 transition-colors"
+                      >
+                        <Icon name="X" size={10} />
+                      </button>
+                    </>
+                  ) : (
+                    <Icon name="User" size={28} className="text-khaki/25" />
+                  )}
+                </div>
+
+                {/* Кнопка и подсказка */}
+                <div className="flex-1">
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    className="hidden"
+                    onChange={handlePhotoChange}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={photoLoading}
+                    className="flex items-center gap-2 px-4 py-2.5 border-2 border-khaki/40 text-khaki font-body font-bold text-sm hover:bg-khaki hover:text-parchment transition-colors rounded-sm disabled:opacity-50 disabled:cursor-not-allowed mb-2"
+                  >
+                    <Icon name="Upload" size={14} />
+                    {photoPreview ? "Заменить фото" : "Выбрать фото"}
+                  </button>
+                  {form.photo_url && !photoLoading && (
+                    <p className="font-body text-xs text-khaki flex items-center gap-1 mb-1">
+                      <Icon name="CheckCircle" size={12} />
+                      Фото загружено
+                    </p>
+                  )}
+                  {photoError && (
+                    <p className="font-body text-brick text-xs mb-1">{photoError}</p>
+                  )}
+                  <p className="font-body text-muted-foreground text-xs leading-relaxed">
+                    JPG, PNG или WEBP, до 5 МБ.<br />
+                    Желательно портретное фото в форме.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="divider-khaki mb-5" />
+
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
                 <label className="font-body text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">
@@ -203,11 +328,13 @@ export default function ProfileRegisterForm({ form, errors, loading, onBack, set
             {errors.agree && <p className="font-body text-brick text-xs mb-4">{errors.agree}</p>}
 
             <button
-              onClick={onSubmit} disabled={loading}
+              onClick={onSubmit} disabled={loading || photoLoading}
               className="flex items-center justify-center gap-2 w-full py-3.5 bg-khaki text-parchment font-body font-bold text-base hover:bg-khaki-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed rounded-sm"
             >
               {loading
                 ? <><Icon name="Loader2" size={18} className="animate-spin" />Отправка заявки...</>
+                : photoLoading
+                ? <><Icon name="Loader2" size={18} className="animate-spin" />Загрузка фото...</>
                 : <><Icon name="Send" size={16} />Подать заявку на регистрацию</>}
             </button>
             <p className="font-body text-xs text-muted-foreground text-center mt-3">
